@@ -22,6 +22,10 @@ let package = Package(
                 .product(name: "JKVValue", package: "JKVValue"),
             ],
             path: "RMQClient",
-            publicHeadersPath: "")
+            publicHeadersPath: "Source",
+            cSettings: [
+                .headerSearchPath(""),
+                .headerSearchPath("Source")
+            ])
     ]
 )
