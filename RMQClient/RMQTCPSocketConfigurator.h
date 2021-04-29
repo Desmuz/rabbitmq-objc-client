@@ -42,6 +42,6 @@
 
 #import <Foundation/Foundation.h>
 #import "RMQTransport.h"
-#import <CocoaAsyncSocket/GCDAsyncSocket.h>
+#import "GCDAsyncSocket.h"
 
 typedef void (^RMQTCPSocketConfigurator)(GCDAsyncSocket * _Nonnull socket);

@@ -43,7 +43,7 @@
 #import <Foundation/Foundation.h>
 #import "RMQTransport.h"
 #import "RMQTLSOptions.h"
-#import <CocoaAsyncSocket/GCDAsyncSocket.h>
+#import "GCDAsyncSocket.h"
 
 @interface RMQTCPSocketTransport : NSObject<RMQTransport,GCDAsyncSocketDelegate>
 

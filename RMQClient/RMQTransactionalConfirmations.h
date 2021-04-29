@@ -40,7 +40,7 @@
 // under either the MPL or the ASL License.
 // ---------------------------------------------------------------------------
 
-#import <RMQClient/RMQClient.h>
+#import "RMQValues.h"
 #import "RMQConfirmations.h"
 #import "RMQLocalSerialQueue.h"
 

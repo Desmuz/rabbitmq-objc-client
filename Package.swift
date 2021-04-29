@@ -10,10 +10,18 @@ let package = Package(
             name: "RMQClient",
             targets: ["RMQClient"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/robbiehanson/CocoaAsyncSocket", from: "7.6.5"),
+        .package(url: "https://github.com/frizzle/JKVValue", .branch("feature/spm-support")),
+    ],
     targets: [
         .target(
             name: "RMQClient",
+            dependencies: [
+                .product(name: "CocoaAsyncSocket", package: "CocoaAsyncSocket"),
+                .product(name: "JKVValue", package: "JKVValue"),
+            ],
             path: "RMQClient",
-            publicHeadersPath: ".")
+            publicHeadersPath: "")
     ]
 )
