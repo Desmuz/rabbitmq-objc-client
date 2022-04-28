@@ -4,7 +4,7 @@
 // The ASL v2.0:
 //
 // ---------------------------------------------------------------------------
-// Copyright 2017-2020 VMware, Inc. or its affiliates.
+// Copyright 2017-2022 VMware, Inc. or its affiliates.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2007-2020 VMware, Inc. or its affiliates.  All rights reserved.
+// Copyright (c) 2007-2022 VMware, Inc. or its affiliates.  All rights reserved.
 //
 // Alternatively, the contents of this file may be used under the terms
 // of the Apache Standard license (the "ASL License"), in which case the
@@ -67,9 +67,9 @@
 @property (nonatomic, readwrite) id <RMQFrameHandler> frameHandler;
 @property (nonatomic, readwrite) id<RMQLocalSerialQueue> commandQueue;
 @property (nonatomic, readwrite) id<RMQWaiterFactory> waiterFactory;
-@property (nonatomic, readwrite) id<RMQHeartbeatSender> heartbeatSender;
+@property (nonatomic, weak, readwrite) id<RMQHeartbeatSender> heartbeatSender;
 @property (nonatomic, weak, readwrite) id<RMQConnectionDelegate> delegate;
-@property (nonatomic, readwrite) id <RMQChannel> channelZero;
+@property (nonatomic, weak, readwrite) id <RMQChannel> channelZero;
 @property (nonatomic, readwrite) RMQConnectionConfig *config;
 @property (nonatomic, readwrite) NSMutableDictionary *userChannels;
 @property (nonatomic, readwrite) NSNumber *frameMax;
@@ -559,22 +559,24 @@ static void RMQInitConnectionConfigDefaults() {
         [self.delegate connection:self failedToConnectWithError:connectError];
     } else {
         [self.transport write:[RMQProtocolHeader new].amqEncoded];
+        __weak id this = self;
 
         [self.commandQueue enqueue:^{
-            id<RMQWaiter> handshakeCompletion = [self.waiterFactory makeWithTimeout:self.handshakeTimeout];
+            __strong typeof(self) strongThis = this;
+            id<RMQWaiter> handshakeCompletion = [strongThis.waiterFactory makeWithTimeout:strongThis.handshakeTimeout];
 
-            RMQHandshaker *handshaker = [[RMQHandshaker alloc] initWithSender:self
-                                                                       config:self.config
+            RMQHandshaker *handshaker = [[RMQHandshaker alloc] initWithSender:strongThis
+                                                                       config:strongThis.config
                                                             completionHandler:^(NSNumber *heartbeatTimeout,
                                                                                 RMQTable *serverProperties) {
-                                                                [self.heartbeatSender startWithInterval:@(heartbeatTimeout.integerValue / 2)];
-                                                                self.handshakeComplete = YES;
+                                                                [strongThis.heartbeatSender startWithInterval:@(heartbeatTimeout.integerValue / 2)];
+                strongThis.handshakeComplete = YES;
                                                                 [handshakeCompletion done];
-                                                                [self.reader run];
-                                                                self.serverProperties = serverProperties;
+                                                                [strongThis.reader run];
+                strongThis.serverProperties = serverProperties;
                                                                 completionHandler();
                                                             }];
-            RMQReader *handshakeReader = [[RMQReader alloc] initWithTransport:self.transport
+            RMQReader *handshakeReader = [[RMQReader alloc] initWithTransport:strongThis.transport
                                                                  frameHandler:handshaker];
             handshaker.reader = handshakeReader;
             [handshakeReader run];
@@ -583,7 +585,7 @@ static void RMQInitConnectionConfigDefaults() {
                 NSError *error = [NSError errorWithDomain:RMQErrorDomain
                                                      code:RMQErrorConnectionHandshakeTimedOut
                                                  userInfo:@{NSLocalizedDescriptionKey: @"Handshake timed out."}];
-                [self.delegate connection:self failedToConnectWithError:error];
+                [strongThis.delegate connection:strongThis failedToConnectWithError:error];
             }
         }];
     }
@@ -704,7 +706,16 @@ static void RMQInitConnectionConfigDefaults() {
               ^{[self.heartbeatSender stop];},
               ^{
                   self.transport.delegate = nil;
+                  [self.transport cleanup];
                   [self.transport close];
+              },
+              ^{
+                  [self.channelAllocator cleanupOnClose];
+                  self.channelAllocator = nil;
+              },
+              ^{
+                  self.reader = nil;
+                  self.frameHandler = nil;
               }];
 }
 
@@ -716,7 +727,16 @@ static void RMQInitConnectionConfigDefaults() {
               ^{[self.heartbeatSender stop];},
               ^{
                   self.transport.delegate = nil;
+                  [self.transport cleanup];
                   [self.transport close];
+              },
+              ^{
+                  [self.channelAllocator cleanupOnClose];
+                  self.channelAllocator = nil;
+              },
+              ^{
+                  self.reader = nil;
+                  self.frameHandler = nil;
               }];
 }
 

@@ -4,7 +4,7 @@
 // The ASL v2.0:
 //
 // ---------------------------------------------------------------------------
-// Copyright 2017-2020 VMware, Inc. or its affiliates.
+// Copyright 2017-2022 VMware, Inc. or its affiliates.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2007-2020 VMware, Inc. or its affiliates.  All rights reserved.
+// Copyright (c) 2007-2022 VMware, Inc. or its affiliates.  All rights reserved.
 //
 // Alternatively, the contents of this file may be used under the terms
 // of the Apache Standard license (the "ASL License"), in which case the
@@ -168,14 +168,15 @@ struct __attribute__((__packed__)) AMQPHeader {
 #define AMQP091_FINAL_OCTET_SIZE 1
 
 - (void)readFrame:(void (^)(NSData * _Nonnull))complete {
+    __weak id this = self;
     [self read:AMQP091_HEADER_SIZE complete:^(NSData * _Nonnull data) {
         const struct AMQPHeader *header;
         header = (const struct AMQPHeader *)data.bytes;
-        
+        __strong typeof(self) strongThis = this;
         UInt32 hostSize = CFSwapInt32BigToHost(header->size);
         
-        [self read:hostSize complete:^(NSData * _Nonnull payload) {
-            [self read:AMQP091_FINAL_OCTET_SIZE complete:^(NSData * _Nonnull frameEnd) {
+        [strongThis read:hostSize complete:^(NSData * _Nonnull payload) {
+            [strongThis read:AMQP091_FINAL_OCTET_SIZE complete:^(NSData * _Nonnull frameEnd) {
                 NSMutableData *allData = [data mutableCopy];
                 [allData appendData:payload];
                 complete(allData);
@@ -227,6 +228,9 @@ struct __attribute__((__packed__)) AMQPHeader {
     if (foundCallback) {
         foundCallback();
     }
+}
+- (void)cleanup {
+    [self.callbacks removeAllObjects];
 }
 
 - (BOOL)tlsUpgradeWithError:(NSError **)error {
