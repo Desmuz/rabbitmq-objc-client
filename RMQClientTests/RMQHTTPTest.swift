@@ -4,7 +4,7 @@
 // The ASL v2.0:
 //
 // ---------------------------------------------------------------------------
-// Copyright 2017-2020 VMware, Inc. or its affiliates.
+// Copyright 2017-2022 VMware, Inc. or its affiliates.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2007-2020 VMware, Inc. or its affiliates.  All rights reserved.
+// Copyright (c) 2007-2022 VMware, Inc. or its affiliates.  All rights reserved.
 //
 // Alternatively, the contents of this file may be used under the terms
 // of the Apache Standard license (the "ASL License"), in which case the
@@ -44,9 +44,9 @@ import XCTest
 
 class RMQHTTPTest: XCTestCase {
     func testGet() {
-        let http = RMQHTTP("http://scooterlabs.com")
-        let actual = http.get("/echo")
+        let http = RMQHTTP("http://httpbin.org")
+        let actual = http.get("/uuid")
         let actualString = String(data: actual, encoding: String.Encoding.utf8)
-        XCTAssertNotNil(actualString!.range(of: "[method] => GET"))
+        XCTAssertNotNil(actualString!.range(of: "uuid"))
     }
 }
